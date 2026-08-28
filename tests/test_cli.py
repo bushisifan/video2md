@@ -91,6 +91,105 @@ def test_main_pipeline_failure_returns_nonzero(tmp_path, monkeypatch, capsys):
     assert "错误" in capsys.readouterr().err
 
 
+def _fake_pipeline_result(out):
+    return PipelineResult(
+        markdown_path=str(Path(out) / "SOP.md"),
+        mermaid_path=str(Path(out) / "flowchart.mmd"),
+        sop=SOPDocument(title="T"),
+        frames_count=0, segments_count=0, step_windows_count=0, understanding_count=0, click_events_count=0,
+    )
+
+
+def test_main_warns_on_low_memory(tmp_path, monkeypatch, capsys):
+    import video2md.cli as cli
+
+    monkeypatch.setattr(cli.Config, "load", lambda p=None: Config())
+    monkeypatch.setattr(cli, "_available_memory_mb", lambda: 3000.0)  # 3GB < 6GB
+
+    def fake_run(video, out, config, progress=None):
+        Path(out).mkdir(parents=True, exist_ok=True)
+        (Path(out) / "SOP.md").write_text("# done", encoding="utf-8")
+        return _fake_pipeline_result(out)
+
+    monkeypatch.setattr(cli, "run_pipeline", fake_run)
+    video = tmp_path / "in.mp4"
+    video.write_bytes(b"x")
+    rc = cli.main([str(video), "-o", str(tmp_path / "out")])
+    assert rc == 0
+    assert "警告" in capsys.readouterr().err
+
+
+def test_main_silent_when_memory_enough(tmp_path, monkeypatch, capsys):
+    import video2md.cli as cli
+
+    monkeypatch.setattr(cli.Config, "load", lambda p=None: Config())
+    monkeypatch.setattr(cli, "_available_memory_mb", lambda: 20000.0)  # 20GB
+
+    def fake_run(video, out, config, progress=None):
+        Path(out).mkdir(parents=True, exist_ok=True)
+        (Path(out) / "SOP.md").write_text("# done", encoding="utf-8")
+        return _fake_pipeline_result(out)
+
+    monkeypatch.setattr(cli, "run_pipeline", fake_run)
+    video = tmp_path / "in.mp4"
+    video.write_bytes(b"x")
+    rc = cli.main([str(video), "-o", str(tmp_path / "out")])
+    assert rc == 0
+    assert "警告" not in capsys.readouterr().err
+
+
+def test_main_reports_stage_timings_and_peak_mem(tmp_path, monkeypatch, capsys):
+    import video2md.cli as cli
+
+    monkeypatch.setattr(cli.Config, "load", lambda p=None: Config())
+    monkeypatch.setattr(cli, "_available_memory_mb", lambda: 20000.0)
+
+    def fake_run(video, out, config, progress=None):
+        Path(out).mkdir(parents=True, exist_ok=True)
+        (Path(out) / "SOP.md").write_text("# done", encoding="utf-8")
+        if progress:  # 模拟管线阶段推进
+            progress("transcribe", 0, 1)
+            progress("transcribe", 1, 1)
+            progress("detect_steps", 0, 1)
+            progress("detect_steps", 1, 1)
+            progress("understand_frame", 1, 2)
+            progress("understand_frame", 2, 2)
+            progress("render", 0, 1)
+            progress("render", 1, 1)
+        return _fake_pipeline_result(out)
+
+    monkeypatch.setattr(cli, "run_pipeline", fake_run)
+    video = tmp_path / "in.mp4"
+    video.write_bytes(b"x")
+    rc = cli.main([str(video), "-o", str(tmp_path / "out")])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "各阶段耗时" in out
+    assert "transcribe" in out
+    assert "understand_frame" in out
+    assert "本进程峰值内存" in out
+
+
+def test_main_skips_timings_when_no_progress(tmp_path, monkeypatch, capsys):
+    import video2md.cli as cli
+
+    monkeypatch.setattr(cli.Config, "load", lambda p=None: Config())
+    monkeypatch.setattr(cli, "_available_memory_mb", lambda: 20000.0)
+
+    def fake_run(video, out, config, progress=None):
+        Path(out).mkdir(parents=True, exist_ok=True)
+        (Path(out) / "SOP.md").write_text("# done", encoding="utf-8")
+        return _fake_pipeline_result(out)
+
+    monkeypatch.setattr(cli, "run_pipeline", fake_run)
+    video = tmp_path / "in.mp4"
+    video.write_bytes(b"x")
+    rc = cli.main([str(video), "-o", str(tmp_path / "out")])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "各阶段耗时" not in out
+
+
 def test_main_export_calls_export_markdown(tmp_path, monkeypatch):
     import video2md.cli as cli
     from unittest import mock
