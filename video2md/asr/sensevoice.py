@@ -1,22 +1,21 @@
-"""Chinese ASR wrapper (local, via FunASR).
+"""中文语音转写封装（本地，基于 FunASR）。
 
-FunASR is imported lazily inside `_load_model` so the rest of the package and
-all unit tests work without `funasr`/`modelscope` installed.
+`_load_model` 内部惰性导入 FunASR，这样包的其他部分与全部单元测试在未安装
+`funasr`/`modelscope` 时也能正常工作。
 
-Sentence-level timestamps (语音驱动抽帧) require paraformer-zh with vad/punc
-models and `sentence_timestamp=True`:
+逐句时间戳（语音驱动抽帧）需要 paraformer-zh 配合 vad/punc 模型并开启
+`sentence_timestamp=True`：
     SenseVoiceTranscriber(model="paraformer-zh", vad_model="fsmn-vad",
                           punc_model="ct-punc-c", sentence_timestamp=True)
-NOTE: funasr returns `sentence_info` start/end in MILLISECONDS; `_parse`
-converts them to seconds.
+注意：funasr 的 `sentence_info` 里 start/end 单位是毫秒；`_parse` 会转成秒。
 """
 import re
 from dataclasses import dataclass
 from typing import List, Optional
 
-# Module-level placeholder filled lazily on first `_load_model` call. Exposed
-# so tests can monkeypatch `video2md.asr.sensevoice.AutoModel` without funasr
-# installed; kept out of the public API.
+# 模块级占位符：首次调用 `_load_model` 时惰性填充。暴露出来是为了测试可以在
+# 未安装 funasr 的情况下 monkeypatch `video2md.asr.sensevoice.AutoModel`；
+# 不纳入公开 API。
 AutoModel = None
 
 
@@ -70,10 +69,9 @@ class SenseVoiceTranscriber:
         return self._parse(result)
 
     def _parse(self, result: list) -> List[Segment]:
-        """Normalize FunASR output into Segment list.
+        """把 FunASR 输出规范化成 Segment 列表。
 
-        Prefers per-sentence timestamps when present; otherwise falls back to a
-        single segment with the whole transcript.
+        优先使用逐句时间戳；否则回退为整段转写的单个 segment。
         """
         segments: List[Segment] = []
         if not result:

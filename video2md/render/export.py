@@ -1,4 +1,4 @@
-"""Export Markdown to PDF/Word/HTML via pandoc (optional dependency)."""
+"""用 pandoc 把 Markdown 导出为 PDF/Word/HTML（可选依赖）。"""
 import shutil
 import subprocess
 from pathlib import Path
@@ -7,9 +7,9 @@ SUPPORTED = {"pdf", "docx", "html"}
 
 
 def export_markdown(markdown_path: str, output_format: str = "pdf") -> str:
-    """Convert a Markdown file using pandoc; raise if pandoc is unavailable.
+    """用 pandoc 转换 Markdown 文件；pandoc 不可用时抛异常。
 
-    Returns the path of the produced file.
+    返回生成文件的路径。
     """
     out_fmt = output_format.strip().lower().lstrip(".")
     if out_fmt not in SUPPORTED:

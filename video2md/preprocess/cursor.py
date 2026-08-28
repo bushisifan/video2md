@@ -1,8 +1,7 @@
-"""Cursor click detection (optional, heuristic).
+"""光标点击检测（可选，启发式）。
 
-A small localized region changing dramatically between consecutive frames is
-treated as a likely mouse click. This is deliberately best-effort: it is used
-only as a weak signal in step synthesis and is disabled by default via config.
+相邻两帧间某块局部区域变化剧烈，视为一次可能的鼠标点击。该功能刻意做成
+尽力而为：仅作为步骤合成的弱信号，且默认通过配置关闭。
 """
 import math
 from dataclasses import dataclass
@@ -75,7 +74,7 @@ class CursorDetector:
             cap.release()
 
     def _hot_region(self, diff):
-        """Bounding box of pixels whose change exceeds change_ratio × the max change."""
+        """变化超过 change_ratio × 最大变化的像素的外接矩形框。"""
         max_val = int(diff.max())
         threshold = int(max_val * self.change_ratio) or 1
         ys, xs = (diff > threshold).nonzero()

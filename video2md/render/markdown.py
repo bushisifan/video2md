@@ -1,4 +1,4 @@
-"""Render SOPDocument to Markdown (完整流程文档模板).
+"""把 SOPDocument 渲染成 Markdown（完整流程文档模板）。
 
 结构：文档信息 / 目的 / 前置条件 / 流程图(Mermaid) / 操作步骤(速览表+详情) /
 疑难解答 / 检查表 / 版本历史。

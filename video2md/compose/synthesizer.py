@@ -1,4 +1,4 @@
-"""Step synthesis using a local text LLM (vLLM, OpenAI-compatible)."""
+"""步骤合成：用本地文本 LLM（vLLM，OpenAI 兼容接口）生成 SOP 步骤树。"""
 import json
 import logging
 from typing import Any, Dict, List, Optional
@@ -59,7 +59,7 @@ class StepSynthesizer:
                 content = resp.choices[0].message.content or ""
                 data = self._extract_json(content)
                 return SOPDocument.model_validate(data)
-            except Exception as e:  # noqa: BLE001 - retry on any parse/validation failure
+            except Exception as e:  # noqa: BLE001 - 解析/校验失败时重试
                 last_err = e
                 if isinstance(e, json.JSONDecodeError):
                     logger.warning("步骤合成 JSON 解析失败 (第 %d 次)：%r", attempt + 1, content[:500])

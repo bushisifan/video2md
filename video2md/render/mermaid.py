@@ -1,15 +1,15 @@
-"""Render SOPDocument to a Mermaid flowchart (flowchart TD)."""
+"""把 SOPDocument 渲染成 Mermaid 流程图（flowchart TD）。"""
 from video2md.compose.schema import SOPDocument, Step
 
 
 def render_mermaid(doc: SOPDocument) -> str:
-    """Generate a `flowchart TD` with main flow, branches and sub-steps.
+    """生成包含主流程、分支、子步骤的 `flowchart TD`。
 
-    Node ids are deterministic (MS1..MSn for main steps, SUB/BR/BC for
-    sub-steps/branch nodes) so tests and diffs stay stable.
+    节点 id 是确定性的（主步骤 MS1..MSn，子步骤/分支节点 SUB/BR/BC），
+    保证测试与 diff 稳定。
 
-    Branches recurse: a branch child's own sub_steps and nested branch are
-    rendered from the child's node, so nested branches are not dropped.
+    分支递归渲染：分支子步骤自身又有的子步骤与嵌套分支，会从该子节点的
+    角度继续渲染，因此嵌套分支不会被丢弃。
     """
     lines = ["flowchart TD"]
     steps = doc.steps

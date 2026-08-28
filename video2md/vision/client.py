@@ -1,4 +1,4 @@
-"""Qwen2.5-VL client via vLLM's OpenAI-compatible endpoint."""
+"""Qwen2.5-VL 客户端：通过 vLLM 的 OpenAI 兼容接口调用。"""
 import json
 import logging
 from typing import Any, Dict, List, Optional
@@ -14,7 +14,7 @@ VALID_ACTIONS = {"click", "input", "navigate", "scroll", "toggle", "select", "op
 
 
 class VisionClient:
-    """Understand screen keyframes using a local vision model (vLLM)."""
+    """用本地视觉模型（vLLM/Ollama）理解屏幕关键帧。"""
 
     def __init__(
         self,
@@ -52,12 +52,12 @@ class VisionClient:
         return self._parse(resp.choices[0].message.content)
 
     def understand_frames(self, frames: List[Any]) -> List[Dict[str, Any]]:
-        """Understand many frames, never letting one failure kill the batch."""
+        """批量理解关键帧：单帧失败不拖垮整批。"""
         results: List[Dict[str, Any]] = []
         for f in frames:
             try:
                 results.append(self.understand_frame(f.image_path, f.timestamp))
-            except Exception as e:  # noqa: BLE001 - degrade per-frame
+            except Exception as e:  # noqa: BLE001 - 逐帧降级
                 logger.exception("视觉理解失败，frame 时间 %.1fs", f.timestamp)
                 results.append(
                     {

@@ -1,4 +1,4 @@
-"""Vision-understanding prompts for Qwen2.5-VL."""
+"""Qwen2.5-VL 视觉理解提示词。"""
 import base64
 
 VISION_SYSTEM_PROMPT = (
@@ -19,7 +19,7 @@ def _encode_image(image_path: str) -> str:
 
 
 def build_vision_messages(image_path: str, timestamp: float) -> list:
-    """Build OpenAI-style chat messages embedding the frame as a data URI."""
+    """构造 OpenAI 风格聊天消息，把关键帧以 data URI 内嵌进去。"""
     image_data = _encode_image(image_path)
     data_uri = f"data:image/png;base64,{image_data}"
     user_content = (

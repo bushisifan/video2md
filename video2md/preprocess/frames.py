@@ -1,9 +1,7 @@
-"""Keyframe extraction with scene-change detection.
+"""带场景变化检测的关键帧抽取。
 
-Pipeline step ①: reduce a long screen recording to the frames that actually
-matter. Scene changes (page flips, dialogs, state changes) are the main step
-boundaries; interval sampling is a fallback so we never end up with too few
-frames.
+管线第 ① 步：把长录屏压缩到真正有用的帧。场景变化（翻页、弹窗、状态变更）
+是主要的步骤边界；间隔采样作为兜底，保证关键帧数量不会太少。
 """
 import math
 import warnings
@@ -40,12 +38,11 @@ class FrameExtractor:
         self.detection_sample_rate = detection_sample_rate
 
     def _detect_scene_timestamps(self, video_path: str) -> List[float]:
-        """Return timestamps (seconds) where a scene change was detected.
+        """返回检测到场景变化的时间戳（秒）。
 
-        Mean absolute difference of consecutive downsampled grayscale frames;
-        a jump above `scene_threshold` marks a new scene. Timestamp 0 is always
-        included as the first frame. The diff is computed only on sampled frames
-        (`detection_sample_rate` samples per second) to cut decode/compute cost.
+        相邻两帧降采样灰度图的平均绝对差，超过 `scene_threshold` 视为新场景；
+        始终包含首帧时间戳 0。差分只在采样帧上计算（`detection_sample_rate`
+        个采样/秒），以降低解码与计算开销。
         """
         cap = cv2.VideoCapture(video_path)
         if not cap.isOpened():
@@ -78,7 +75,7 @@ class FrameExtractor:
         return timestamps
 
     def _ensure_min_frames(self, timestamps: List[float], duration: float) -> List[float]:
-        """Pad with interval-sampled timestamps so we have at least min_frames."""
+        """用间隔采样补足时间戳，保证关键帧数量不少于 min_frames。"""
         if len(timestamps) >= self.min_frames or duration <= 0:
             return timestamps
         step = self.interval_seconds
@@ -90,11 +87,10 @@ class FrameExtractor:
         return sorted(timestamps)
 
     def extract(self, video_path: str, output_dir: str) -> List[KeyFrame]:
-        """Extract keyframes to `output_dir`, return metadata list.
+        """把关键帧写入 `output_dir`，返回元数据列表。
 
-        `image_path` mirrors the real write path (`out_path / filename`) so the
-        pipeline can later relativize it against the output root for the
-        Markdown embeds.
+        `image_path` 与真实写路径（`out_path / filename`）保持一致，方便管线
+        之后相对化到输出根目录，供 Markdown 嵌入图片使用。
         """
         cap = cv2.VideoCapture(video_path)
         if not cap.isOpened():
@@ -134,7 +130,7 @@ class FrameExtractor:
     def extract_at_timestamps(
         self, video_path: str, timestamps: List[float], output_dir: str
     ) -> List[KeyFrame]:
-        """Extract a frame at each given timestamp (seconds).
+        """在给定的每个时间戳（秒）处抽取一帧。
 
         语音驱动抽帧：按 LLM 切分出的步骤时间点取帧，保证"步骤 ↔ 截图"
         按时间对齐（方案B）。时间戳去重、排序；`image_path` 与 `extract`

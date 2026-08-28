@@ -1,4 +1,4 @@
-"""Prompt for step synthesis (merges transcript + frame understanding + cursor)."""
+"""步骤合成提示词：合并转写 + 帧理解 + 光标事件。"""
 from typing import Any, Dict, List
 
 SYSTEM_PROMPT = """你是一名专业的技术文档工程师，擅长将屏幕操作录屏转换成标准操作程序（SOP）。

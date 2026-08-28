@@ -1,7 +1,7 @@
-"""Configuration models for video2md.
+"""video2md 的配置模型。
 
-Loads config.yaml into typed pydantic models; missing sections fall back to
-module-level defaults so a sparse YAML still produces a valid Config.
+把 config.yaml 加载到类型化的 pydantic 模型；缺失的 section 回退到模块级
+默认值，因此即使 YAML 很精简也能得到合法 Config。
 """
 from pathlib import Path
 from typing import Union
@@ -61,7 +61,7 @@ class Config(BaseModel):
 
     @classmethod
     def load(cls, path: Union[str, Path] = DEFAULT_CONFIG_PATH) -> "Config":
-        """Load config from a YAML file, merging with defaults."""
+        """从 YAML 文件加载配置，与默认值合并。"""
         config_path = Path(path)
         if not config_path.exists():
             raise FileNotFoundError(f"Config file not found: {config_path}")

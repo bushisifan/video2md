@@ -1,4 +1,4 @@
-"""video2md command-line interface."""
+"""video2md 命令行入口。"""
 import argparse
 import re
 import subprocess

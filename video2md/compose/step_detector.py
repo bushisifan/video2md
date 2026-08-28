@@ -1,4 +1,4 @@
-"""LLM-driven step time-window detection (方案B).
+"""LLM 驱动的步骤时间窗切分（方案B）。
 
 先把带时间戳的语音转写交给 LLM 切成"操作步骤 + 时间区间"，随后按这些
 时间区间抽帧，保证"步骤 ↔ 截图"按时间对齐——避免同画面多操作导致的
@@ -94,7 +94,7 @@ class StepDetector:
                 data = json.loads(content.strip())
                 result = StepWindowList.model_validate(data)
                 return self._snap_to_segments(result.steps, segments)
-            except Exception as e:  # noqa: BLE001 - retry on parse/validation failure
+            except Exception as e:  # noqa: BLE001 - 解析/校验失败时重试
                 last_err = e
         raise RuntimeError(f"步骤切分失败: {last_err}")
 

@@ -1,4 +1,4 @@
-"""End-to-end pipeline orchestration for video2md.
+"""video2md 端到端管线编排。
 
 方案B（语音驱动抽帧）：抽音 → ASR(逐句时间戳) → LLM 步骤时间点检测 →
 按步骤时间点抽帧（场景变化兜底）→ 视觉理解 → 合成(带时间窗约束) → 渲染。
@@ -60,14 +60,14 @@ def run_pipeline(
             video_path, str(out / "audio.wav"), config.preprocess.audio_sample_rate
         )
     except RuntimeError:
-        audio_path = None  # silent video → degrade gracefully
+        audio_path = None  # 无声视频 → 优雅降级
 
     cursor_events = []
     if config.cursor.enabled:
         try:
             detector = CursorDetector()
             cursor_events = detector.detect(video_path)
-        except Exception as e:  # noqa: BLE001 - cursor is an optional heuristic
+        except Exception as e:  # noqa: BLE001 - 光标检测为可选启发式信号
             logger.warning("光标检测失败，忽略：%s", e)
             cursor_events = []
 
@@ -85,7 +85,7 @@ def run_pipeline(
                 sentence_timestamp=config.asr.sentence_timestamp,
             )
             segments = transcriber.transcribe(audio_path)
-        except Exception as e:  # noqa: BLE001 - ASR is an optional signal
+        except Exception as e:  # noqa: BLE001 - 语音转写为可选信号
             logger.warning("语音转写失败，降级为无转写：%s", e)
             segments = []
     report("transcribe", 1, 1)
@@ -104,7 +104,7 @@ def run_pipeline(
                 timeout=config.compose.timeout,
             )
             step_windows = detector.detect(segments)
-        except Exception as e:  # noqa: BLE001 - step detection is optional
+        except Exception as e:  # noqa: BLE001 - 步骤切分为可选环节
             logger.warning("步骤切分失败，退化为场景变化抽帧：%s", e)
             step_windows = []
     report("detect_steps", 1, 1)
@@ -133,7 +133,7 @@ def run_pipeline(
     for kf in keyframes:
         kf.image_path = Path(kf.image_path).relative_to(out).as_posix()
 
-    # ⑤ vision: understand each keyframe
+    # ⑤ 视觉理解：逐个理解关键帧
     vision = VisionClient(
         base_url=config.vision.base_url,
         api_key=config.vision.api_key,
@@ -148,7 +148,7 @@ def run_pipeline(
         abs_path = str(out / Path(kf.image_path))
         try:
             parsed = vision.understand_frame(abs_path, kf.timestamp)
-        except Exception as e:  # noqa: BLE001 - vision is an optional signal
+        except Exception as e:  # noqa: BLE001 - 视觉理解为可选信号
             logger.warning("视觉理解失败，frame %.1fs：%s", kf.timestamp, e)
             parsed = {
                 "action": "other",
@@ -174,7 +174,7 @@ def run_pipeline(
     _sanitize_screenshots(sop, {kf.image_path for kf in keyframes})
     report("synthesize", 1, 1)
 
-    # ⑦ render
+    # ⑦ 渲染：写 Markdown 与 Mermaid 流程图
     report("render", 0, 1)
     mermaid_text = render_mermaid(sop)
     markdown_path = out / "SOP.md"
@@ -205,10 +205,10 @@ def _iter_steps(steps):
 
 
 def _sanitize_screenshots(sop: SOPDocument, valid: set) -> None:
-    """Drop screenshot references that point to a frame we never extracted.
+    """清掉指向未抽取帧的截图引用。
 
-    The LLM is asked to only use provided frame paths but may hallucinate; we
-    blank unknown paths so the Markdown never embeds a broken image.
+    LLM 被要求只使用给定的帧路径，但仍可能幻觉出别的路径；我们把未知路径
+    置空，避免 Markdown 里出现裂图。
     """
     for step in _iter_steps(sop.steps):
         if step.screenshot not in valid:

@@ -1,4 +1,4 @@
-"""Pydantic schema for the SOP step tree (strict validation of LLM output)."""
+"""SOP 步骤树的数据模型（pydantic 强校验 LLM 输出）。"""
 from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field

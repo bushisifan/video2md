@@ -1,4 +1,4 @@
-"""Audio extraction from video files using ffmpeg."""
+"""用 ffmpeg 从视频中抽取音频。"""
 import subprocess
 from pathlib import Path
 from typing import Union
@@ -9,10 +9,10 @@ def extract_audio(
     output_path: Union[str, Path],
     sample_rate: int = 16000,
 ) -> str:
-    """Extract mono 16kHz WAV audio from a video file.
+    """从视频抽取单声道 16kHz WAV 音频。
 
-    Raises RuntimeError if ffmpeg fails or produces no file (e.g. a video with
-    no audio track). The pipeline treats that as a silent-video fallback.
+    若 ffmpeg 失败或未产出文件（如无音轨的视频）则抛 RuntimeError；
+    管线把这种情况当作"无声视频"降级处理。
     """
     cmd = [
         "ffmpeg", "-y", "-nostdin", "-loglevel", "error",
