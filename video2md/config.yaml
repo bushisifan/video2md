@@ -1,0 +1,38 @@
+# video2md 配置：所有模型均为本地部署，通过 OpenAI 兼容接口调用
+# 注意：api_key 的占位值 EMPTY 仅供本地 vLLM 使用。真实密钥必须通过环境
+# 变量注入，切勿提交到版本库。
+
+asr:
+  model: paraformer-zh
+  device: cpu
+  sample_rate: 16000
+  vad_model: fsmn-vad
+  punc_model: ct-punc-c
+  sentence_timestamp: true
+
+vision:
+  base_url: http://localhost:8000/v1
+  api_key: EMPTY
+  model: Qwen/Qwen2.5-VL-7B-Instruct
+  temperature: 0.1
+  max_tokens: 2048
+
+compose:
+  base_url: http://localhost:8000/v1
+  api_key: EMPTY
+  model: Qwen/Qwen2.5-7B-Instruct
+  temperature: 0.1
+  max_tokens: 8192
+
+preprocess:
+  scene_threshold: 30.0      # 相邻帧平均像素差，超过视为场景变化
+  interval_seconds: 2.0      # 兜底抽帧间隔
+  resize_width: 768          # 关键帧缩放宽度
+  min_frames: 5              # 至少保留的关键帧数量
+  audio_sample_rate: 16000
+
+cursor:
+  enabled: false             # 光标检测为启发式，默认关闭
+
+render:
+  images_dir: images
