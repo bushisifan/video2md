@@ -29,6 +29,8 @@ class LLMEndpointConfig(BaseModel):
     temperature: float = 0.1
     max_tokens: int = 2048
     timeout: float = 120
+    # 输入 token 上限：提示词超过该值会切分成多块调用，避免依赖模型自带的大上下文
+    max_input_tokens: int = 24000
 
 
 class PreprocessConfig(BaseModel):

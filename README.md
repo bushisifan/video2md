@@ -63,7 +63,7 @@ video2md 你的录屏.mp4 -o output -c config.local.yaml --export pdf
 |---|---|---|
 | `asr` | `paraformer-zh` + `fsmn-vad` + `ct-punc-c`，`sentence_timestamp: true` | 本地 CPU 转写，逐句时间戳（方案B 必需） |
 | `vision` | `http://localhost:8000/v1` / `Qwen/Qwen2.5-VL-7B-Instruct` | 视觉理解端点（可指向 Ollama / vLLM） |
-| `compose` | `http://localhost:8000/v1` / `Qwen/Qwen2.5-7B-Instruct` | 步骤合成 LLM 端点 |
+| `compose` | `http://localhost:8000/v1` / `Qwen/Qwen2.5-7B-Instruct` | 步骤合成 LLM 端点；`max_input_tokens: 24000`（输入超限自动切分，不依赖模型大上下文） |
 | `preprocess` | `scene_threshold: 30`, `interval_seconds: 2`, `resize_width: 768` | 抽帧/场景变化参数 |
 | `cursor` | `enabled: false` | 光标点击检测（启发式，默认关） |
 | `render` | `images_dir: images` | 截图目录名 |

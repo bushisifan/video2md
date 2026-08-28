@@ -32,3 +32,11 @@ def test_bundled_config_loads():
     cfg = Config.load()
     assert cfg.vision.model.startswith("Qwen")
     assert cfg.compose.model.startswith("Qwen")
+
+
+def test_max_input_tokens_default_and_override(tmp_path):
+    cfg = Config()
+    assert cfg.compose.max_input_tokens == 24000
+    cfg_yaml = tmp_path / "config.yaml"
+    cfg_yaml.write_text("compose:\n  max_input_tokens: 5000\n", encoding="utf-8")
+    assert Config.load(str(cfg_yaml)).compose.max_input_tokens == 5000

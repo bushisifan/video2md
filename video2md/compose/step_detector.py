@@ -13,6 +13,7 @@ from openai import OpenAI
 from pydantic import BaseModel, ConfigDict, Field
 
 from video2md.asr.sensevoice import Segment
+from video2md.compose.tokens import estimate_tokens
 
 
 class StepWindow(BaseModel):
@@ -64,11 +65,13 @@ class StepDetector:
         max_tokens: int = 2048,
         timeout: float = 120,
         client: Optional[OpenAI] = None,
+        max_input_tokens: int = 24000,
     ):
         self.model = model
         self.temperature = temperature
         self.max_tokens = max_tokens
         self.timeout = timeout
+        self.max_input_tokens = max_input_tokens
         # trust_env=False：忽略系统/环境代理（本地与可直连的云端 API 都不需要代理）
         self.client = client or OpenAI(
             base_url=base_url,
@@ -78,6 +81,40 @@ class StepDetector:
 
     def detect(
         self, segments: List[Segment], max_retries: int = 2
+    ) -> List[StepWindow]:
+        """切分步骤时间窗；输入超过 max_input_tokens 时按片段分块调用再合并。"""
+        if self._input_tokens(segments) <= self.max_input_tokens:
+            steps = self._detect_steps(segments, max_retries)
+        else:
+            steps = []
+            for chunk in self._chunk_segments(segments):
+                steps.extend(self._detect_steps(chunk, max_retries))
+            # 合并后重新编号，保证 order 连续
+            for i, s in enumerate(steps, 1):
+                s.order = i
+        return self._snap_to_segments(steps, segments)
+
+    def _input_tokens(self, segments: List[Segment]) -> int:
+        messages = build_step_detection_messages(segments)
+        return sum(estimate_tokens(m.get("content", "")) for m in messages)
+
+    def _chunk_segments(self, segments: List[Segment]) -> List[List[Segment]]:
+        """把片段切成若干组，使每组构造的提示词不超过 max_input_tokens。"""
+        chunks: List[List[Segment]] = []
+        current: List[Segment] = []
+        for seg in segments:
+            candidate = current + [seg]
+            if self._input_tokens(candidate) > self.max_input_tokens and current:
+                chunks.append(current)
+                current = [seg]
+            else:
+                current = candidate
+        if current:
+            chunks.append(current)
+        return chunks
+
+    def _detect_steps(
+        self, segments: List[Segment], max_retries: int
     ) -> List[StepWindow]:
         messages = build_step_detection_messages(segments)
         last_err: Optional[Exception] = None
@@ -93,7 +130,7 @@ class StepDetector:
                 content = resp.choices[0].message.content or ""
                 data = json.loads(content.strip())
                 result = StepWindowList.model_validate(data)
-                return self._snap_to_segments(result.steps, segments)
+                return result.steps
             except Exception as e:  # noqa: BLE001 - 解析/校验失败时重试
                 last_err = e
         raise RuntimeError(f"步骤切分失败: {last_err}")

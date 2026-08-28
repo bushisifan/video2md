@@ -39,9 +39,10 @@ class FakeClient:
         self.chat = FakeChat(responses)
 
 
-def _detector(responses):
+def _detector(responses, max_input_tokens=24000):
     return StepDetector(
-        base_url="http://x", api_key="y", model="m", client=FakeClient(responses)
+        base_url="http://x", api_key="y", model="m", client=FakeClient(responses),
+        max_input_tokens=max_input_tokens,
     )
 
 
@@ -80,6 +81,26 @@ def test_detect_snaps_to_segment_boundaries():
     # 0.1 → 最近边界 0.27；3.1 → 最近边界 3.05
     assert windows[0].start == 0.27
     assert windows[0].end == 3.05
+
+
+def test_detect_chunks_when_input_over_limit():
+    long_text = "这是一段足够长的语音转写文本，用来触发输入超限切分，重复多次。" * 6
+    segments = [
+        Segment(0.0, 2.0, long_text),
+        Segment(2.0, 4.0, long_text),
+        Segment(4.0, 6.0, long_text),
+    ]
+    contents = [
+        json.dumps({"steps": [{"order": 1, "title": "第一步", "start": 0.0, "end": 2.0}]}),
+        json.dumps({"steps": [{"order": 1, "title": "第二步", "start": 2.0, "end": 4.0}]}),
+        json.dumps({"steps": [{"order": 1, "title": "第三步", "start": 4.0, "end": 6.0}]}),
+    ]
+    det = _detector(contents, max_input_tokens=50)
+    windows = det.detect(segments)
+    assert [w.title for w in windows] == ["第一步", "第二步", "第三步"]
+    assert [w.order for w in windows] == [1, 2, 3]
+    # 3 段 → 3 块 → 3 次调用（全部响应已消费，证明走了切分）
+    assert len(det.client.chat.completions.responses) == 0
 
 
 def test_detect_retries_then_raises():

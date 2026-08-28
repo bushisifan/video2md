@@ -102,6 +102,7 @@ def run_pipeline(
                 temperature=config.compose.temperature,
                 max_tokens=config.compose.max_tokens,
                 timeout=config.compose.timeout,
+                max_input_tokens=config.compose.max_input_tokens,
             )
             step_windows = detector.detect(segments)
         except Exception as e:  # noqa: BLE001 - 步骤切分为可选环节
@@ -169,6 +170,7 @@ def run_pipeline(
         temperature=config.compose.temperature,
         max_tokens=config.compose.max_tokens,
         timeout=config.compose.timeout,
+        max_input_tokens=config.compose.max_input_tokens,
     )
     sop = synthesizer.synthesize(segments, understandings, cursor_events, step_windows)
     _sanitize_screenshots(sop, {kf.image_path for kf in keyframes})
